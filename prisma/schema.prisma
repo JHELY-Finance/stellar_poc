@@ -1,0 +1,33 @@
+model Post {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  ba1     String   @db.VarChar(255)
+  ca1     String   @db.VarChar(255)
+  bp1     String   @db.VarChar(255)
+  ap1     String   @db.VarChar(255)
+
+  ba2     String   @db.VarChar(255)
+  ca2     String   @db.VarChar(255)
+  bp2     String   @db.VarChar(255)
+  ap2     String   @db.VarChar(255)
+  ba3     String   @db.VarChar(255)
+  ca3     String   @db.VarChar(255)
+  bp3     String   @db.VarChar(255)
+  ap3     String   @db.VarChar(255)
+
+  ie     String   @db.VarChar(255)
+  ae     String   @db.VarChar(255)
+  
+  profit     String   @db.VarChar(255)
+  
+}
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL_ROOT")
+}
