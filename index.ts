@@ -10,6 +10,13 @@ const assetA = new StellarSdk.Asset('XLM');
 const assetB = new StellarSdk.Asset('USDC', 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN');
 const assetC = new StellarSdk.Asset('BTC', 'GDPJALI4AZKUU2W426U5WKMAT6CN3AJRPIIRYR2YM54TL2GDWO5O2MZM');
 
+function notNullAsseet(a) {
+  if (typeof a === 'undefined') {
+    return 'XLM';
+  }
+  return a;
+}
+
 async function findArbitrageOpportunities() {
   const pairs = [
     [assetA, assetB],
@@ -26,9 +33,9 @@ async function findArbitrageOpportunities() {
     const orderbook2 = await server.orderbook(asset2, asset3).call();
     const orderbook3 = await server.orderbook(asset1, asset3).call();
 
-    console.log('ob1', orderbook1.base.asset_code, orderbook1.counter.asset_code, orderbook1.bids[0].price, orderbook1.asks[0].price);
-    console.log('ob2', orderbook2.base.asset_code, orderbook2.counter.asset_code, orderbook2.bids[0].price, orderbook2.asks[0].price);
-    console.log('ob3', orderbook3.base.asset_code, orderbook3.counter.asset_code, orderbook3.bids[0].price, orderbook3.asks[0].price);
+    console.log('ob1', notNullAsseet(orderbook1.base.asset_code), notNullAsseet(orderbook1.counter.asset_code), orderbook1.bids[0].price, orderbook1.asks[0].price);
+    console.log('ob2', notNullAsseet(orderbook2.base.asset_code), notNullAsseet(orderbook2.counter.asset_code), orderbook2.bids[0].price, orderbook2.asks[0].price);
+    console.log('ob3', notNullAsseet(orderbook3.base.asset_code), notNullAsseet(orderbook3.counter.asset_code), orderbook3.bids[0].price, orderbook3.asks[0].price);
 
     const impliedExchangeRate = new BigNumber(orderbook1.bids[0].price).times(new BigNumber(orderbook2.bids[0].price));
     const actualExchangeRate = new BigNumber(orderbook3.bids[0].price);
@@ -43,9 +50,37 @@ async function findArbitrageOpportunities() {
       console.log(tradeAmount1.toString(), tradeAmount2.toString(), tradeAmount3.toString());
       const profit = tradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
 
+      storeArbOpportunity({
+        ba1: notNullAsseet(orderbook1.base.asset_code),
+        ca1: notNullAsseet(orderbook1.counter.asset_code),
+        bp1: orderbook1.bids[0].price,
+        ap1: orderbook1.asks[0].price,
+
+        ba2: notNullAsseet(orderbook2.base.asset_code),
+        ca2: notNullAsseet(orderbook2.counter.asset_code),
+        bp2: orderbook2.bids[0].price,
+        ap2: orderbook2.asks[0].price,
+
+        ba3: notNullAsseet(orderbook3.base.asset_code),
+        ca3: notNullAsseet(orderbook3.counter.asset_code),
+        bp3: orderbook3.bids[0].price,
+        ap3: orderbook3.asks[0].price,
+
+        ie: impliedExchangeRate.toString(),
+        ae: actualExchangeRate.toString(),
+
+        profit: profit.toString(),
+      });
+
       console.log(`Arbitrage opportunity found, profit of ${profit.toFixed(2)}%.`);
     }
   }
+}
+
+async function storeArbOpportunity(data: any) {
+  await prisma.post.create({
+    data: data,
+  });
 }
 
 async function main() {

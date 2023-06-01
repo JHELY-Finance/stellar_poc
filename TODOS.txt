@@ -1,4 +1,4 @@
-1. Connect this new replit with GH
+OK 1. Connect this new replit with GH
 OK 2. Integrate ARB code with TS/Prisma.
 3. Add arb opportunities to the DB
 4. Replit that never sleeps as deployment option?

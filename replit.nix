@@ -12,5 +12,5 @@
         pkgs.openssl_1_1
         pkgs.coreutils
 	];
-  env = { LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.openssl_1_1.out, pkgs.coreutils.out ]; };
+  env = { LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.openssl_1_1.out pkgs.coreutils.out ]; };
 }
