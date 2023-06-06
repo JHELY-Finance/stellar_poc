@@ -1,11 +1,3 @@
-package pl.nethuns.main;
-
-/**
- *
- * @author pnycz
- */
-
-
 import static java.lang.Math.max;
 import static java.lang.Math.abs;
 import static java.lang.Math.log;
@@ -14,10 +6,6 @@ import static java.lang.Math.sqrt;
 import pl.nethuns.main.ArbitrageMatrix;
 import pl.nethuns.model.ArbitrageCandidate;
 
-/**
- *
- * @author Piotr
- */
 public class volumeEstimator {
 
     private static class VolumeAndPrice {

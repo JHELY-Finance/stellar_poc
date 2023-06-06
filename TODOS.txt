@@ -5,4 +5,5 @@ OK 4. Replit that never sleeps as deployment option?
 5. Analyse data from the DB, try to assess if these are reliable arb signals
 6. Add fee for 3x tx to the arb opportunity calculations
 -- fee has to be calculated in the same currenct as in which we would have arb opportunity
-7. 
+7. Add volume estimator from Piotr's code.
+8. 
