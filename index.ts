@@ -31,26 +31,33 @@ async function findArbitrageOpportunities() {
 
     const orderbook1 = await server.orderbook(asset1, asset2).call();
     const orderbook2 = await server.orderbook(asset2, asset3).call();
-    const orderbook3 = await server.orderbook(asset1, asset3).call();
+    const orderbook3 = await server.orderbook(asset3, asset1).call();
 
     console.log('ob1', notNullAsseet(orderbook1.base.asset_code), notNullAsseet(orderbook1.counter.asset_code), orderbook1.bids[0].price, orderbook1.asks[0].price);
     console.log('ob2', notNullAsseet(orderbook2.base.asset_code), notNullAsseet(orderbook2.counter.asset_code), orderbook2.bids[0].price, orderbook2.asks[0].price);
     console.log('ob3', notNullAsseet(orderbook3.base.asset_code), notNullAsseet(orderbook3.counter.asset_code), orderbook3.bids[0].price, orderbook3.asks[0].price);
 
-    const impliedExchangeRate = new BigNumber(orderbook1.bids[0].price).times(new BigNumber(orderbook2.bids[0].price));
-    const actualExchangeRate = new BigNumber(orderbook3.bids[0].price);
-    console.log('ie', impliedExchangeRate.toString(), 'ae', actualExchangeRate.toString());
+    //const impliedExchangeRate = new BigNumber(orderbook1.bids[0].price).times(new BigNumber(orderbook2.bids[0].price));
+    //const actualExchangeRate = new BigNumber(orderbook3.bids[0].price);
 
-    if (impliedExchangeRate > actualExchangeRate) {
+    //PN: my prop, volume not considered anyway
+    //impliedExchangeRate = new BigNumber(orderbook1.bids[0].price).times(new BigNumber(orderbook2.bids[0].price));
+    //impliedExchangeRate = new BigNumber(impliedExchangeRate).times(new BigNumber(orderbook3.bids[0].price));
+    //impliedExchangeRate = new BigNumber(impliedExchangeRate).times(new BigNumber(orderbook1.bids[0].price));
+
+
+    //console.log('ie', impliedExchangeRate.toString(), 'ae', actualExchangeRate.toString());
+
+    //if (impliedExchangeRate > actualExchangeRate) {
       const startAmount = new BigNumber(100);
       const tradeAmount1 = startAmount.times(new BigNumber(orderbook1.bids[0].price));
       const tradeAmount2 = tradeAmount1.times(new BigNumber(orderbook2.bids[0].price));
-      const tradeAmount3 = tradeAmount2.dividedBy(new BigNumber(orderbook3.asks[0].price));
+      const tradeAmount3 = tradeAmount2.times(new BigNumber(orderbook3.bids[0].price));
 
-      console.log(tradeAmount1.toString(), tradeAmount2.toString(), tradeAmount3.toString());
+      console.log('Trade amounts', tradeAmount1.toString(), tradeAmount2.toString(), tradeAmount3.toString());
       const profit = tradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
 
-      storeArbOpportunity({
+      /*storeArbOpportunity({
         ba1: notNullAsseet(orderbook1.base.asset_code),
         ca1: notNullAsseet(orderbook1.counter.asset_code),
         bp1: orderbook1.bids[0].price,
@@ -70,10 +77,10 @@ async function findArbitrageOpportunities() {
         ae: actualExchangeRate.toString(),
 
         profit: profit.toString(),
-      });
+      });*/
 
       console.log(`Arbitrage opportunity found, profit of ${profit.toFixed(2)}%.`);
-    }
+    //}
   }
 }
 
@@ -90,11 +97,8 @@ async function main() {
     .ledgers()
     .cursor('now')
     .stream({
-      onmessage: async (ledger: Ledger) => {
-        // This code will execute every time a new ledger is created
-
+      onmessage: async (ledger) => {
         console.log(`New ledger created with sequence ${ledger.sequence}`);
-
         await findArbitrageOpportunities();
         console.log('------------------ Looking for arb finished ------------------');
       },
@@ -102,35 +106,6 @@ async function main() {
         console.error('Error in ledgers stream:', error);
       }
     });
-
-  /*
-  console.log('aaa');
-  await prisma.post.create({
-    data: {
-      ba1: 'xyz',
-      ca1: 'xyz',
-      bp1: 'xyz',
-      ap1: 'xyz',
-
-      ba2: 'xyz',
-      ca2: 'xyz',
-      bp2: 'xyz',
-      ap2: 'xyz',
-      ba3: 'xyz',
-      ca3: 'xyz',
-      bp3: 'xyz',
-      ap3: 'xyz',
-
-      ie: 'xyz',
-      ae: 'xyz',
-
-      profit: 'xyz',
-    },
-  });
-
-
-  const allPosts = await prisma.post.findMany();
-  console.log(allPosts);*/
 }
 
 main()
