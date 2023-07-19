@@ -10,7 +10,7 @@ const assetA = new StellarSdk.Asset('XLM');
 const assetB = new StellarSdk.Asset('USDC', 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN');
 const assetC = new StellarSdk.Asset('BTC', 'GDPJALI4AZKUU2W426U5WKMAT6CN3AJRPIIRYR2YM54TL2GDWO5O2MZM');
 
-function notNullAsseet(a) {
+function notNullAsseet(a: any) {
   if (typeof a === 'undefined') {
     return 'XLM';
   }
@@ -97,12 +97,12 @@ async function main() {
     .ledgers()
     .cursor('now')
     .stream({
-      onmessage: async (ledger) => {
+      onmessage: async (ledger: any) => {
         console.log(`New ledger created with sequence ${ledger.sequence}`);
         await findArbitrageOpportunities();
         console.log('------------------ Looking for arb finished ------------------');
       },
-      onerror: (error) => {
+      onerror: (error: any) => {
         console.error('Error in ledgers stream:', error);
       }
     });
