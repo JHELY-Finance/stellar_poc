@@ -57,6 +57,8 @@ async function findArbitrageOpportunities() {
       console.log('Trade amounts', tradeAmount1.toString(), tradeAmount2.toString(), tradeAmount3.toString());
       const profit = tradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
 
+      // TODO: add IF to check if the profit is there
+
       /*storeArbOpportunity({
         ba1: notNullAsseet(orderbook1.base.asset_code),
         ca1: notNullAsseet(orderbook1.counter.asset_code),
@@ -79,7 +81,7 @@ async function findArbitrageOpportunities() {
         profit: profit.toString(),
       });*/
 
-      console.log(`Arbitrage opportunity found, profit of ${profit.toFixed(2)}%.`);
+      console.log(`Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
     //}
   }
 }
