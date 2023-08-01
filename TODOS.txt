@@ -6,3 +6,9 @@ OK 4. Replit that never sleeps as deployment option?
 -- fee has to be calculated in the same currency as in which we would have arb opportunity
 6. Add volume estimator from example java code in /OLD/java_examples 
 7. Analyse data from the DB, try to assess if these are reliable arb signals
+8. Explore if going counter clockwise would generate different profitability.
+"//1. XLM->USDC->BTC->XLM
+//2. USDC->BTC->XLM->USDC
+//3. BTC->XLM->USDC->BTC
+1,2,3 -- are having the same profitability, 4 can potentially has different
+//4. XLM->BTC->USDC->XLM"
