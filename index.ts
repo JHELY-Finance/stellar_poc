@@ -29,6 +29,8 @@ async function findArbitrageOpportunities() {
     // const [asset1, asset2] = pairs[i];
     // const [_, asset3] = pairs[(i + 1) % pairs.length];
 
+    const fee = await server.fetchBaseFee() * 0.0000001 ; // 1 lumen = 10000000 stroop 
+
     const orderbook1 = await server.orderbook(assetA, assetB).call();
     const orderbook2 = await server.orderbook(assetB, assetC).call();
     const orderbook3 = await server.orderbook(assetC, assetA).call();
@@ -71,10 +73,10 @@ async function findArbitrageOpportunities() {
       
 
       console.log('pair 1 Trade amounts :', tradeAmount1.toString(),  tradeAmount2.toString(), tradeAmount3.toString());
-      const profit = await tradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
+      const profit = await tradeAmount3.minus(startAmount).minus(fee).dividedBy(startAmount).times(100);
 
       console.log('pair 2 Trade amounts :', revtradeAmount1.toString(), revtradeAmount2.toString(),  revtradeAmount3.toString());
-      const revprofit = await revtradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
+      const revprofit = await revtradeAmount3.minus(startAmount).minus(fee).dividedBy(startAmount).times(100);
 
       // TODO: add IF to check if the profit is there
 
