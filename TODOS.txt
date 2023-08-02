@@ -12,3 +12,4 @@ OK 4. Replit that never sleeps as deployment option?
 //3. BTC->XLM->USDC->BTC
 1,2,3 -- are having the same profitability, 4 can potentially has different
 //4. XLM->BTC->USDC->XLM"
+9. Add execution order/transaction on Stellar if profitability is above fee costs.
