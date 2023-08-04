@@ -29,7 +29,7 @@ async function findArbitrageOpportunities() {
     // const [asset1, asset2] = pairs[i];
     // const [_, asset3] = pairs[(i + 1) % pairs.length];
 
-    const fee = await server.fetchBaseFee() * 0.0000001 ; // 1 lumen = 10000000 stroop 
+    const fee = await server.fetchBaseFee() * 0.0000001 * 3; // 1 lumen = 10000000 stroops 
 
     const orderbook1 = await server.orderbook(assetA, assetB).call();
     const orderbook2 = await server.orderbook(assetB, assetC).call();
