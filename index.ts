@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { start } from 'repl';
 
 const StellarSdk = require('stellar-sdk');
 const BigNumber = require('bignumber.js');
@@ -23,14 +22,14 @@ function notNullAsseet(a: any) {
 }
 
 async function fetchbalance(publickey: string, assetcode: string) {
-  
+
   return server.loadAccount(publickey)
     .then((account: any) => {
       const balances = account.balances
       const assetbalance = balances.find((balance: any) =>
         balance.asset_type === assetcode
     );
-           
+
     if (assetbalance) {
       return assetbalance.balance;
     } else {
@@ -56,21 +55,21 @@ async function findArbitrageOpportunities() {
     // const [_, asset3] = pairs[(i + 1) % pairs.length];
 
     const fee = await server.fetchBaseFee() * 0.0000001 * 3; // 1 lumen = 10000000 stroops 
-    const availableasset = await fetchbalance(address, 'native');
+    const availableasset = await fetchbalance(address, "native");
 
     if( availableasset === null) {
       console.log('null balance');
       return ;
     }
 
-    let orderbook = [];
-    let revorderbook = [];
+    let orderBook = [];
+    let revorderBook = [];
 
     for(let i=0; i<3; i++) {
-      orderbook.push(await server.orderbook(assets[i], assets[(i+1)%3])) ;
+      orderBook.push(await server.orderbook(assets[i], assets[(i+1)%3]).call()) ;
     }
     for(let i=3; i>0; i--) {
-      revorderbook.push(await server.orderbook(assets[i%3], assets[(i-1)%3])) ;
+      revorderBook.push(await server.orderbook(assets[i%3], assets[(i-1)%3]).call()) ;
     }
     
     // const orderbook1 = await server.orderbook(assetA, assetB).call();
@@ -81,11 +80,11 @@ async function findArbitrageOpportunities() {
     // const revorderbook3 = await server.orderbook(assetB, assetA).call();
 
     for(let i=0; i<3; ++i) {
-      console.log('path', i+1, notNullAsseet(orderbook[i].base.asset_code), notNullAsseet(orderbook[i].counter.asset_code), orderbook[i].bids[0].price, orderbook[i].asks[0].price);
+      console.log('pair', i+1, notNullAsseet(orderBook[i].base.asset_code), notNullAsseet(orderBook[i].counter.asset_code), orderBook[i].bids[0].price, orderBook[i].asks[0].price);
     } console.log('------------------ path 1 ------------------')
 
     for(let i=0; i<3; ++i) {
-      console.log('path', i+1, notNullAsseet(revorderbook[i].base.asset_code), notNullAsseet(revorderbook[i].counter.asset_code), revorderbook[i].bids[0].price, revorderbook[i].asks[0].price);
+      console.log('path', i+1, notNullAsseet(revorderBook[i].base.asset_code), notNullAsseet(revorderBook[i].counter.asset_code), revorderBook[i].bids[0].price, revorderBook[i].asks[0].price);
     }  console.log('------------------ path 2 ------------------')
     
     // console.log('ob1', notNullAsseet(orderbook1.base.asset_code), notNullAsseet(orderbook1.counter.asset_code), orderbook1.bids[0].price, orderbook1.asks[0].price);
@@ -109,18 +108,71 @@ async function findArbitrageOpportunities() {
     //console.log('ie', impliedExchangeRate.toString(), 'ae', actualExchangeRate.toString());
 
     //if (impliedExchangeRate > actualExchangeRate) {
-
+       
       const startAmount = new BigNumber(availableasset);
-      let start = startAmount;
-      let tradeAmount = [];
-      let revtradeAmount = [];
+      let curramount = startAmount;
+      let balAmount: any[] = []; // this stores the unused amount of asset while a swap i got 10 from last swap but next swap only need 4 this will store 6
+      let tradeAmount: any[] = []; // this stores the amount of asset used
       
+      const revstartAmount = new BigNumber(availableasset);
+      let revcurramount = startAmount;
+      let revbalAmount: any[] = []; // this stores the unused amount of asset while a swap i got 10 from last swap but next swap only need 4 this will store 6
+      let revtradeAmount: any[] = []; // this stores the amount of asset used
+
       for(let i=0; i<3; i++) {
-        if(start > orderbook[i].bids[0].amount) {
-          start = orderbook[i].bids[0].amount;
+        const bidamount = new BigNumber(orderBook[i].bids[0].amount);
+        const check = await curramount.comparedTo(bidamount); 
+        if(check === 1) {
+          balAmount.push(curramount.minus(bidamount));
+          tradeAmount.push(bidamount) ;
+        } else {
+          tradeAmount.push(curramount) ;
+          balAmount.push(new BigNumber (0)) ;
         }
-        // tradeAmount.push(start.times(new BigNumber(orderbook[i].bids[0].price)));
+        curramount = await tradeAmount[i].times(new BigNumber(orderBook[i].bids[0].price));
+
+        // 2nd pair
+        const revbidamount = new BigNumber(revorderBook[i].bids[0].amount);
+        const revcheck = await revcurramount.comparedTo(revbidamount); 
+        if(revcheck === 1) {
+          revbalAmount.push(revcurramount.minus(revbidamount));
+          revtradeAmount.push(revbidamount) ;
+        } else {
+          revtradeAmount.push(revcurramount) ;
+          revbalAmount.push(new BigNumber (0)) ;
+        }
+        revcurramount = await revtradeAmount[i].times(new BigNumber(revorderBook[i].bids[0].price));
+        
       }
+      tradeAmount.push(curramount) // pushes the last available asset in base currency
+      revtradeAmount.push(revcurramount)
+
+
+      // Corrects the extra traded asset 
+      for(let i=2; i>0; i--) { // traverses back collects the extra asset and reduces it from previoous balances
+        if(balAmount[i].comparedTo('0') == 1) {
+          
+          const exasset = await balAmount[i].dividedBy(new BigNumber(orderBook[i-1].bids[0].price));
+          // console.log(i+1, balAmount[i].toString(), exasset.toString()); // debug
+          balAmount[i-1] = balAmount[i-1].plus(exasset);
+          tradeAmount[i-1] = tradeAmount[i-1].minus(exasset);
+          balAmount[i] = 0;
+        }
+
+        if(revbalAmount[i].comparedTo('0') == 1) {
+          
+          const revexasset = await revbalAmount[i].dividedBy(new BigNumber(revorderBook[i-1].bids[0].price));
+          // console.log(i+1, balAmount[i].toString(), exasset.toString()); // debug
+          revbalAmount[i-1] = revbalAmount[i-1].plus(revexasset);
+          revtradeAmount[i-1] = revtradeAmount[i-1].minus(revexasset);
+          revbalAmount[i] = 0;
+        }
+      }
+      console.log('Pair 1 Trade Amounts', tradeAmount[0].toString(), tradeAmount[1].toString(), tradeAmount[2].toString());
+      console.log('Pair 2 Trade Amounts', revtradeAmount[0].toString(), revtradeAmount[1].toString(), revtradeAmount[2].toString())
+      
+      const profit = await tradeAmount[3].minus(tradeAmount[0]).minus(fee).dividedBy(tradeAmount[0]).times(100);
+      const revprofit = await revtradeAmount[3].minus(revtradeAmount[0]).minus(fee).dividedBy(revtradeAmount[0]).times(100);
 
       // const tradeAmount1 = startAmount.times(new BigNumber(orderbook1.bids[0].price));
       // const tradeAmount2 = tradeAmount1.times(new BigNumber(orderbook2.bids[0].price));
@@ -161,8 +213,8 @@ async function findArbitrageOpportunities() {
         profit: profit.toString(),
       });*/
 
-      // console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
-      // console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
+      console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
+      console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
     //}
   // }
 }
