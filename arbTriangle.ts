@@ -1,22 +1,15 @@
 import axios from 'axios';
-import StellarSdk from 'stellar-sdk';
-import * as fs from 'fs';
+import fs from 'fs';
 
-interface Record {
-    _embedded: {
-        records: {
-            base_asset_code?: string;
-            counter_asset_code?: string;
-            base_amount: string;
-            counter_amount: string;
-        }[];
-    };
+interface Asset {
+    asset_code?: string;
 }
 
-// Configure StellarSdk with the Horizon server URL
-//StellarSdk.Network.use(new StellarSdk.Network("https://horizon.stellar.org"));
+export interface TradePair {
+    base: Asset;
+    counter: Asset;
+}
 
-// Retrieve Trading Pairs
 let config = {
     method: 'get',
     maxBodyLength: Infinity,
@@ -26,70 +19,82 @@ let config = {
     }
 };
 
-axios(config)
-    .then((response) => {
-        const apiResponse: Record = response.data;
+export async function getNonZeroLiquidityPairs(): Promise<TradePair[]> {
+    console.log('Fetching trading pairs with non-zero liquidity...');
+    try {
+        const response = await axios(config);
+        console.log('Trading pairs fetched successfully.');
 
-        // Extract the trading pairs from the API response with non-zero liquidity
-        const tradingPairs = apiResponse._embedded.records
-            .filter(record => parseFloat(record.base_amount) > 0 && parseFloat(record.counter_amount) > 0)
-            .map(record => ({
-                base: record.base_asset_code || 'XLM',
-                quote: record.counter_asset_code || 'XLM'
+        const tradingPairs: TradePair[] = response.data._embedded.records
+            .filter((record: any) => parseFloat(record.base_amount) > 0 && parseFloat(record.counter_amount) > 0)
+            .map((record: any) => ({
+                base: {
+                    asset_code: record.base_asset_code || 'XLM',
+                },
+                counter: {
+                    asset_code: record.counter_asset_code || 'XLM',
+                }
             }));
 
-        // Print tradingPairs for debugging
-        console.log('Filtered Trading Pairs:', tradingPairs);
+        // Display tradingPairs in the console
+        console.log('Non-zero liquidity trading pairs:', tradingPairs);
 
-        // Function to generate arbitrage triangles
-        function generateTriangles(tradingPairs: { base: string; quote: string }[]): { currencies: string[] }[] {
-            const pairMap: { [key: string]: Set<string> } = {};
+        return tradingPairs;
+    } catch (error) {
+        throw new Error(`Error fetching trading pairs: ${error}`);
+    }
+}
 
-            // Build a map of base -> quote pairs
-            for (const pair of tradingPairs) {
-                if (!pairMap[pair.base]) {
-                    pairMap[pair.base] = new Set();
-                }
-                pairMap[pair.base].add(pair.quote);
+export async function generateThirdAsset(tradePair: TradePair, tradePairs: TradePair[]): Promise<TradePair | null> {
+    try {
+        // Check if the tradePair's counter asset has a non-zero liquidity pair with any other asset
+        const hasNonZeroLiquidityPair = tradePairs.some(pair =>
+            pair.base.asset_code === tradePair.counter.asset_code &&
+            pair.counter.asset_code !== tradePair.base.asset_code // Exclude the same asset pair
+        );
+
+        if (hasNonZeroLiquidityPair) {
+            const thirdAsset: TradePair = {
+                base: { ...tradePair.counter },
+                counter: { ...tradePair.base },
+            };
+            return thirdAsset;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error generating third asset: ${error}`);
+        return null;
+    }
+}
+
+
+async function main() {
+    try {
+        const tradingPairs = await getNonZeroLiquidityPairs();
+        const thirdAssets: TradePair[] = [];
+
+        for (const tradePair of tradingPairs) {
+            const thirdAsset = await generateThirdAsset(tradePair, tradingPairs);
+            if (thirdAsset) {
+                thirdAssets.push(thirdAsset);
             }
-
-            const triangles: { currencies: string[] }[] = [];
-
-            for (const pair1 of tradingPairs) {
-                const pair1Quotes = pairMap[pair1.quote];
-                if (pair1Quotes) {
-                    const pair1QuoteArray = Array.from(pair1Quotes);
-                    for (const pair2Quote of pair1QuoteArray) {
-                        const pair2Quotes = pairMap[pair2Quote];
-                        if (pair2Quotes && pair2Quotes.has(pair1.base)) {
-                            triangles.push({ currencies: [pair1.base, pair1.quote, pair2Quote] });
-                        }
-                    }
-                }
-            }
-            console.log("Generated Triangles:", triangles)
-            return triangles;
         }
 
-        // Generate arbitrage triangles
-        const triangles = generateTriangles(tradingPairs);
+        // Display generated third assets in the console
+        console.log('Generated third assets:', thirdAssets);
 
-        if (triangles.length === 0) {
-            console.error('No arbitrage triangles were generated.');
-            return;
-        }
-        // Store triangles in a JSON file
-        const trianglesJson = JSON.stringify(triangles, null, 2);
+        // Combine tradingPairs and thirdAssets
+        const allAssets = [...tradingPairs, ...thirdAssets];
 
-        fs.writeFile('arbitrageTriangles.json', trianglesJson, 'utf8', (err) => {
-            if (err) {
-                console.error('Error writing to JSON file:', err);
-            } else {
-                console.log('Arbitrage triangles have been stored in arbitrageTriangles.json');
-            }
-        });
+        // Save allAssets to a JSON file
+        const outputPath = 'all_assets.json';
+        fs.writeFileSync(outputPath, JSON.stringify(allAssets, null, 2));
+        console.log(`All assets saved to ${outputPath}`);
+    } catch (error) {
+        console.error(`An error occurred: ${error}`);
+    }
+}
 
-    })
-    .catch((error) => {
-        console.log(error);
-    });
+// Call the main function to start the process
+main();
