@@ -17,7 +17,7 @@ const pairs = [
                 [assets[0], assets[2], assets[1], assets[0]]
               ]
 
-const address = 'GD3VDQXZMEDFWJCNIZXYJWT5VXKQ352MFGQ5F4RHJ5NZRPRGZCMHFRQL' ;
+const address = 'GAS2EAREA5VSJ6Y4RJLV7Y2FSTXNHOC455NKNP3DM5CULXDFMB5OSGOD' ;
 
 function notNullAsseet(a: any) {
   if (typeof a === 'undefined') {
@@ -46,7 +46,7 @@ async function fetchBalance(publickey: string, assetcode: string) {
   });
 }
 
-async function fetchOrderBook() {
+async function fetchOrderBook(pairs: any) {
 
   let orderBook = [];
 
@@ -119,7 +119,7 @@ async function findArbitrageOpportunities() {
       return ;
     }
 
-    const orderBook = await fetchOrderBook();
+    const orderBook = await fetchOrderBook(pairs);
     const tradeAmount = await fetchTradedAsset(availableasset, orderBook);
 
     for(let i=0; i<pairs.length; i++) {
@@ -207,6 +207,16 @@ main()
     await prisma.$disconnect()
     process.exit(1)
   })
+
+
+export {
+  pairs,
+  address,
+  fetchBalance,
+  fetchOrderBook,
+  fetchTradedAsset,
+  findArbitrageOpportunities
+}
 
 
 
