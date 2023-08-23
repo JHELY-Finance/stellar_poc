@@ -12,7 +12,7 @@ const assets = [
                 new StellarSdk.Asset('BTC', 'GDPJALI4AZKUU2W426U5WKMAT6CN3AJRPIIRYR2YM54TL2GDWO5O2MZM')
               ]
 
-const pairs = [
+const paths = [
                 [assets[0], assets[1], assets[2], assets[0]],
                 [assets[0], assets[2], assets[1], assets[0]]
               ]
@@ -41,34 +41,37 @@ async function fetchBalance(publickey: string, assetcode: string) {
       }
   })
   .catch((error: any) => {
-    console.error('Error', error);
     return null;
   });
 }
 
-async function fetchOrderBook(pairs: any) {
+async function fetchOrderBook(paths: any) {
 
-  let orderBook = [];
+    const orderBook: any[][] = [];
 
-    for(let i=0; i<pairs.length; i++) {
-      let pathOrderBook = [];
+    for(let i=0; i<paths.length; i++) {
+      const pathOrderBook: any[] = [];
 
-      for(let j=0; j<pairs[i].length-1; j++) {
-        pathOrderBook.push(await server.orderbook(pairs[i][j], pairs[i][j+1]).call()) ;
+      for(let j=0; j<paths[i].length-1; j++) {
+        try {
+          pathOrderBook[i].push(await server.orderbook(paths[i][j], paths[i][j+1]).call()) ;
+        } catch (error) {
+          throw new Error('Failed to fetch order book');
+        }
       }
       orderBook.push(pathOrderBook);
     }
-
   return orderBook;
+  
 }
 
 async function fetchTradedAsset(availableasset: any, orderBook:any) {
     
-    let balAmount: any[] = []; // this stores the unused amount of asset while a swap i got 10 from last swap but next swap only need 4 this will store 6
-    let tradeAmount: any[] = []; // this stores the amount of asset used for the swap
+    let balAmount: any[][] = []; // this stores the unused amount of asset while a swap i got 10 from last swap but next swap only need 4 this will store 6
+    let tradeAmount: any[][] = []; // this stores the amount of asset used for the swap
     const startAmount = new BigNumber(availableasset);
 
-    for(let i=0; i<pairs.length; i++) {
+    for(let i=0; i<paths.length; i++) {
       
       let curramount = startAmount;
       let pairBalance = [];
@@ -119,16 +122,16 @@ async function findArbitrageOpportunities() {
       return ;
     }
 
-    const orderBook = await fetchOrderBook(pairs);
+    const orderBook = await fetchOrderBook(paths);
     const tradeAmount = await fetchTradedAsset(availableasset, orderBook);
 
-    for(let i=0; i<pairs.length; i++) {
+    for(let i=0; i<paths.length; i++) {
       for(let j=0; j<orderBook[i].length; ++j) {
         console.log('pair', j+1, notNullAsseet(orderBook[i][j].base.asset_code), notNullAsseet(orderBook[i][j].counter.asset_code), orderBook[i][j].bids[0].price, orderBook[i][j].asks[0].price);
       } console.log('------------------ path', i+1, '------------------')
     }
     
-    for(let i=0; i<pairs.length; i++) {
+    for(let i=0; i<paths.length; i++) {
       const profit = await tradeAmount[i][3].minus(tradeAmount[i][0]).minus(fee).dividedBy(tradeAmount[i][0]).times(100);
       console.log('Path', i+1, 'Trade Amounts', tradeAmount[i][0].toString(), tradeAmount[i][1].toString(), tradeAmount[i][2].toString());
       console.log(`Path`, i+1, `Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
@@ -174,11 +177,11 @@ async function findArbitrageOpportunities() {
   // }
 }
 
-// async function storeArbOpportunity(data: any) {
-//   await prisma.post.create({
-//     data: data,
-//   });
-// }
+async function storeArbOpportunity(data: any) {
+  await prisma.post.create({
+    data: data,
+  });
+}
 
 async function main() {
   console.log('Started');
@@ -198,24 +201,24 @@ async function main() {
     });
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+if(require.main === module) {
+  main()
+    .then(async () => {
+      await prisma.$disconnect()
+    })
+    .catch(async (e) => {
+      console.error(e)
+      await prisma.$disconnect()
+      process.exit(1)
+    })
+  }
 
 
 export {
-  pairs,
+  paths,
   address,
   fetchBalance,
-  fetchOrderBook,
-  fetchTradedAsset,
-  findArbitrageOpportunities
+  fetchOrderBook
 }
 
 
