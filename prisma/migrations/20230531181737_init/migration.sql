@@ -14,9 +14,6 @@ CREATE TABLE `Post` (
     `ca3` VARCHAR(255) NOT NULL,
     `bp3` VARCHAR(255) NOT NULL,
     `ap3` VARCHAR(255) NOT NULL,
-    `ie` VARCHAR(255) NOT NULL,
-    `ae` VARCHAR(255) NOT NULL,
     `profit` VARCHAR(255) NOT NULL,
-
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

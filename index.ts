@@ -80,7 +80,17 @@ async function findArbitrageOpportunities() {
 
       // TODO: add IF to check if the profit is there
 
-      /*storeArbOpportunity({
+      //DONE checks if the profit is greater than 0 i.e. positive
+      // if (profit.isGreaterThan(0)){
+            // console.log('arbitrage opportunity is profitable');
+      // }
+      // if (revprofit.isGreaterThan(0)){
+        // console.log('arbitrage opportunity is profitable when reversed');
+      // }
+      
+
+      //store arbitrage opportunity
+      storeArbOpportunity({
         ba1: notNullAsseet(orderbook1.base.asset_code),
         ca1: notNullAsseet(orderbook1.counter.asset_code),
         bp1: orderbook1.bids[0].price,
@@ -96,14 +106,32 @@ async function findArbitrageOpportunities() {
         bp3: orderbook3.bids[0].price,
         ap3: orderbook3.asks[0].price,
 
-        ie: impliedExchangeRate.toString(),
-        ae: actualExchangeRate.toString(),
-
         profit: profit.toString(),
-      });*/
+      });
+
+
+      //store reverse arbitrage opportunity
+      storeArbOpportunity({
+        ba1: notNullAsseet(revorderbook1.base.asset_code),
+        ca1: notNullAsseet(revorderbook1.counter.asset_code),
+        bp1: revorderbook1.bids[0].price,
+        ap1: revorderbook1.asks[0].price,
+
+        ba2: notNullAsseet(orderbook2.base.asset_code),
+        ca2: notNullAsseet(orderbook2.counter.asset_code),
+        bp2: revorderbook2.bids[0].price,
+        ap2: revorderbook2.asks[0].price,
+
+        ba3: notNullAsseet(revorderbook3.base.asset_code),
+        ca3: notNullAsseet(revorderbook3.counter.asset_code),
+        bp3: revorderbook3.bids[0].price,
+        ap3: revorderbook3.asks[0].price,
+
+        profit: revprofit.toString(),
+      });
 
       console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
-      console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
+      console.log(`Pair 2 (Revised Triangle) Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
     //}
   // }
 }
