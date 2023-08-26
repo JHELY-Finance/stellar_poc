@@ -4,6 +4,7 @@ const StellarSdk = require('stellar-sdk');
 const BigNumber = require('bignumber.js');
 
 const server = new StellarSdk.Server('https://horizon.stellar.org');
+const sourceKeys = StellarSdk.Keypair
 const prisma = new PrismaClient();
 
 const assetA = new StellarSdk.Asset('XLM');
@@ -73,6 +74,36 @@ async function findArbitrageOpportunities() {
       const revprofit = revtradeAmount3.minus(startAmount).dividedBy(startAmount).times(100);
 
       // TODO: add IF to check if the profit is there
+      if (profit > StellarSdk.BASE_FEE) {
+        let path = [asset2, asset3];
+        server.loadAccount(sourceKeys.publicKey())
+        .then((account: any) => {
+          const transaction = new StellarSdk.TransactionBuilder(account, {
+            fee: StellarSdk.BASE_FEE,
+            networkPassphrase: StellarSdk.Networks.TESTNET
+          })
+          .addOperation(StellarSdk.Operation.pathPaymentStrictSend({
+            destination: asset2.issuer,
+            sendAsset: asset1,
+            sendAmount: "1000",
+            destAsset: asset1,
+            destMin: "5.50",
+            path
+          }))
+          .setTimeout(180)
+          .build();
+
+          transaction.sign(sourceKeys);
+
+          return server.submitTransaction(transaction);
+        })
+        .then((result: any) => {
+          console.log('Transaction succeeded:', result);
+        })
+        .catch((error: any) => {
+          console.error('Transaction failed:', error);
+        });
+      }
 
       /*storeArbOpportunity({
         ba1: notNullAsseet(orderbook1.base.asset_code),
