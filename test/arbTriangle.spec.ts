@@ -1,43 +1,41 @@
 import { expect } from 'chai';
-import { getNonZeroLiquidityPairs, generateThirdAsset, TradePair } from '../arbTriangle';
+import { fetchOffers, processOffers } from '../arbTriangle';
 
-describe('Trading Pairs Functions', function () {
-    describe('getNonZeroLiquidityPairs', function () {
-        it('should return an array of trading pairs with non-zero liquidity', async function () {
-            const tradingPairs = await getNonZeroLiquidityPairs();
-            expect(tradingPairs).to.be.an('array');
-        });
-    });
+describe('fetchOffers', () => {
+  it('should fetch offers successfully', async () => {
+    const url = 'https://example.com/offers'; // Replace with your test URL
+    const params = {}; // Replace with your test parameters
 
-    describe('generateThirdAsset', function () {
-        it('should generate a third asset for a valid trade pair', async function () {
-            const tradePair: TradePair = {
-                base: {
-                    asset_code: 'ASSET1',
-                },
-                counter: {
-                    asset_code: 'ASSET2',
-                },
-            };
-            const tradingPairs: TradePair[] = [
-            ];
-            const thirdAsset = await generateThirdAsset(tradePair, tradingPairs);
-            expect(thirdAsset).to.be.an('object');
-        });
+    try {
+      const responseData = await fetchOffers(url, params);
+      expect(responseData).to.be.an('object'); // Modify this expectation based on your API response
+    } catch (error) {
+      // Handle any errors or assertions if needed
+      expect.fail('Unexpected error occurred');
+    }
+  });
 
-        it('should return null for a trade pair without a valid third asset', async function () {
-            const tradePair: TradePair = {
-                base: {
-                    asset_code: 'ASSET1',
-                },
-                counter: {
-                    asset_code: 'ASSET2',
-                },
-            };
-            const tradingPairs: TradePair[] = [
-            ];
-            const thirdAsset = await generateThirdAsset(tradePair, tradingPairs);
-            expect(thirdAsset).to.be.null;
-        });
-    });
+  // Add more test cases as needed
+});
+
+describe('processOffers', () => {
+  it('should process offers data', () => {
+    const jsonData = {
+      _embedded: {
+        records: [
+          // Replace with sample offer data
+        ],
+      },
+    };
+
+    try {
+      const processResult = processOffers(jsonData);
+      expect(processResult).to.equal(undefined); // Modify as needed
+    } catch (error) {
+      // Handle any errors or assertions if needed
+      expect.fail('Unexpected error occurred');
+    }
+  });
+
+  // Add more test cases as needed
 });

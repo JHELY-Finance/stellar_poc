@@ -1,100 +1,80 @@
 import axios from 'axios';
-import fs from 'fs';
+import { writeFileSync } from 'fs'; // Import the writeFileSync function
 
 interface Asset {
-    asset_code?: string;
+  asset_code: string;
+  asset_issuer?: string;
 }
 
-export interface TradePair {
-    base: Asset;
-    counter: Asset;
+interface Offer {
+  selling: Asset;
+  buying: Asset;
 }
 
-let config = {
-    method: 'get',
-    maxBodyLength: Infinity,
-    url: 'https://horizon.stellar.org/trades?trade_type=all&order=asc',
-    headers: {
-        'Accept': 'application/json'
-    }
+export const fetchOffers = async (url: string, params: any) => {
+  try {
+    const response = await axios.get(url, { ...params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export async function getNonZeroLiquidityPairs(): Promise<TradePair[]> {
-    console.log('Fetching trading pairs with non-zero liquidity...');
-    try {
-        const response = await axios(config);
-        console.log('Trading pairs fetched successfully.');
+export const processOffers = (jsonData: any) => {
+  const offers: Offer[] = jsonData._embedded.records;
 
-        const tradingPairs: TradePair[] = response.data._embedded.records
-            .filter((record: any) => parseFloat(record.base_amount) > 0 && parseFloat(record.counter_amount) > 0)
-            .map((record: any) => ({
-                base: {
-                    asset_code: record.base_asset_code || 'XLM',
-                },
-                counter: {
-                    asset_code: record.counter_asset_code || 'XLM',
-                }
-            }));
+  const assetPairs = offers
+    .filter((offer: Offer) =>
+      offer.selling.asset_issuer !== undefined &&
+      offer.buying.asset_issuer !== undefined
+    )
+    .map((offer: Offer) => ({
+      selling: {
+        asset_code: offer.selling.asset_code,
+        asset_issuer: offer.selling.asset_issuer,
+      },
+      buying: {
+        asset_code: offer.buying.asset_code,
+        asset_issuer: offer.buying.asset_issuer,
+      },
+    }));
 
-        // Display tradingPairs in the console
-        console.log('Non-zero liquidity trading pairs:', tradingPairs);
+  const jsonContent = JSON.stringify(assetPairs, null, 2); // Convert assetPairs to JSON format
 
-        return tradingPairs;
-    } catch (error) {
-        throw new Error(`Error fetching trading pairs: ${error}`);
+  // Write the JSON content to a file named 'assetPairs.json'
+  writeFileSync('assetPairs.json', jsonContent);
+
+  console.log('Processed asset pairs saved to assetPairs.json');
+};
+
+const fetchAndProcessOffers = async (url: string, limit: number | undefined, cursor: string | null = null) => {
+  const params: any = {
+    headers: {
+      'Accept': 'application/json',
+    },
+    params: {
+      limit,
+      cursor,
+    },
+  };
+
+  while (true) {
+    const jsonData = await fetchOffers(url, params);
+    processOffers(jsonData);
+
+    if (jsonData._links.next) {
+      cursor = new URL(jsonData._links.next.href).searchParams.get('cursor');
+      params.params.cursor = cursor;
+    } else {
+      break;
     }
-}
+  }
+};
 
-export async function generateThirdAsset(tradePair: TradePair, tradePairs: TradePair[]): Promise<TradePair | null> {
-    try {
-        // Check if the tradePair's counter asset has a non-zero liquidity pair with any other asset
-        const hasNonZeroLiquidityPair = tradePairs.some(pair =>
-            pair.base.asset_code === tradePair.counter.asset_code &&
-            pair.counter.asset_code !== tradePair.base.asset_code // Exclude the same asset pair
-        );
+const baseUrl = 'https://horizon.stellar.org/offers';
+const limitPerPage = 100;
 
-        if (hasNonZeroLiquidityPair) {
-            const thirdAsset: TradePair = {
-                base: { ...tradePair.counter },
-                counter: { ...tradePair.base },
-            };
-            return thirdAsset;
-        } else {
-            return null;
-        }
-    } catch (error) {
-        console.error(`Error generating third asset: ${error}`);
-        return null;
-    }
-}
-
-
-async function main() {
-    try {
-        const tradingPairs = await getNonZeroLiquidityPairs();
-        const thirdAssets: TradePair[] = [];
-
-        for (const tradePair of tradingPairs) {
-            const thirdAsset = await generateThirdAsset(tradePair, tradingPairs);
-            if (thirdAsset) {
-                thirdAssets.push(thirdAsset);
-            }
-        }
-
-        // Display generated third assets in the console
-        console.log('Generated third assets:', thirdAssets);
-
-        // Combine tradingPairs and thirdAssets
-        const allAssets = [...tradingPairs, ...thirdAssets];
-
-        // Save allAssets to a JSON file
-        const outputPath = 'all_assets.json';
-        fs.writeFileSync(outputPath, JSON.stringify(allAssets, null, 2));
-        console.log(`All assets saved to ${outputPath}`);
-    } catch (error) {
-        console.error(`An error occurred: ${error}`);
-    }
-}
-
-// Call the main function to start the process
-main();
+fetchAndProcessOffers(baseUrl, limitPerPage)
+  .catch((error: any) => {
+    console.log(error);
+  });
