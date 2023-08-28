@@ -47,22 +47,20 @@ async function fetchBalance(publickey: string, assetcode: string) {
 
 async function fetchOrderBook(paths: any) {
 
-    const orderBook: any[][] = [];
-
+  const orderBook = [];
+  try {
     for(let i=0; i<paths.length; i++) {
-      const pathOrderBook: any[] = [];
+      const pathOrderBook = [];
 
       for(let j=0; j<paths[i].length-1; j++) {
-        try {
-          pathOrderBook[i].push(await server.orderbook(paths[i][j], paths[i][j+1]).call()) ;
-        } catch (error) {
-          throw new Error('Failed to fetch order book');
-        }
+        pathOrderBook.push(await server.orderbook(paths[i][j], paths[i][j+1]).call()) ;
       }
       orderBook.push(pathOrderBook);
     }
+  } catch (error) {
+    throw new Error('Failed to fetch order book');
+  }
   return orderBook;
-  
 }
 
 async function fetchTradedAsset(availableasset: any, orderBook:any) {
