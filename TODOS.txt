@@ -13,3 +13,4 @@ OK 8. Explore if going counter clockwise would generate different profitability.
   1,2,3 -- are having the same profitability, 4 can potentially have different
   //4. XLM->BTC->USDC->XLM"
 9. Add execution order/transaction on Stellar if profitability exceeds fee costs.
+10. Store data in MongoDB?

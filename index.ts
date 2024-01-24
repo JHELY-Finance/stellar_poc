@@ -102,6 +102,10 @@ async function findArbitrageOpportunities() {
         profit: profit.toString(),
       });*/
 
+      if (profit > 0.0 || revprofit > 0.0) {
+        console.log('WE FOuND PROFIT');
+      }
+
       console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
       console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
     //}
@@ -122,7 +126,7 @@ async function main() {
     .cursor('now')
     .stream({
       onmessage: async (ledger: any) => {
-        console.log(`New ledger created with sequence ${ledger.sequence}`);
+        console.log(`${new Date()} New ledger created with sequence ${ledger.sequence}` );
         await findArbitrageOpportunities();
         console.log('------------------ Looking for arb finished ------------------');
       },
