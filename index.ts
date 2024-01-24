@@ -39,9 +39,9 @@ async function findArbitrageOpportunities() {
     const revorderbook2 = await server.orderbook(assetC, assetB).call();
     const revorderbook3 = await server.orderbook(assetB, assetA).call();
     
-    console.log('ob1', notNullAsseet(orderbook1.base.asset_code), notNullAsseet(orderbook1.counter.asset_code), orderbook1.bids[0].price, orderbook1.asks[0].price);
-    console.log('ob2', notNullAsseet(orderbook2.base.asset_code), notNullAsseet(orderbook2.counter.asset_code), orderbook2.bids[0].price, orderbook2.asks[0].price);
-    console.log('ob3', notNullAsseet(orderbook3.base.asset_code), notNullAsseet(orderbook3.counter.asset_code), orderbook3.bids[0].price, orderbook3.asks[0].price);
+    console.log('ob1', notNullAsseet(orderbook1.base.asset_code), notNullAsseet(orderbook1.counter.asset_code), 'B:', orderbook1.bids[0].price, orderbook1.bids[0].amount, 'A:', orderbook1.asks[0].price, orderbook1.bids[0].amount);
+    console.log('ob2', notNullAsseet(orderbook2.base.asset_code), notNullAsseet(orderbook2.counter.asset_code), 'B:', orderbook2.bids[0].price, orderbook2.bids[0].amount, 'A:', orderbook2.asks[0].price, orderbook2.bids[0].amount);
+    console.log('ob3', notNullAsseet(orderbook3.base.asset_code), notNullAsseet(orderbook3.counter.asset_code), 'B:', orderbook3.bids[0].price, orderbook3.bids[0].amount, 'A:', orderbook3.asks[0].price, orderbook3.bids[0].amount);
     console.log('------------------ pair 1 ------------------')
     
     console.log('revob1', notNullAsseet(revorderbook1.base.asset_code), notNullAsseet(revorderbook1.counter.asset_code), revorderbook1.bids[0].price, revorderbook1.asks[0].price);
@@ -73,10 +73,12 @@ async function findArbitrageOpportunities() {
       
 
       console.log('pair 1 Trade amounts :', tradeAmount1.toString(),  tradeAmount2.toString(), tradeAmount3.toString());
-      const profit = await tradeAmount3.minus(startAmount).minus(fee).dividedBy(startAmount).times(100);
+      const profit = await tradeAmount3.minus(startAmount).minus(fee);
+      const profitPercentage = await profit.dividedBy(startAmount).times(100);
 
       console.log('pair 2 Trade amounts :', revtradeAmount1.toString(), revtradeAmount2.toString(),  revtradeAmount3.toString());
-      const revprofit = await revtradeAmount3.minus(startAmount).minus(fee).dividedBy(startAmount).times(100);
+      const revprofit = await revtradeAmount3.minus(startAmount).minus(fee);
+      const revprofitPercentage = await revprofit.dividedBy(startAmount).times(100);
 
       // TODO: add IF to check if the profit is there
 
@@ -102,12 +104,12 @@ async function findArbitrageOpportunities() {
         profit: profit.toString(),
       });*/
 
-      if (profit > 0.0 || revprofit > 0.0) {
+      if (profitPercentage > 0.0 || revprofitPercentage > 0.0) {
         console.log('WE FOuND PROFIT');
       }
 
-      console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profit.toFixed(2)}%.`);
-      console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofit.toFixed(2)}%.`);
+      console.log(`Pair 1 Arbitrage opportunity assessed, profit of ${profitPercentage.toFixed(2)}% / ${profit}.`);
+      console.log(`Pair 2 Arbitrage opportunity assessed, profit of ${revprofitPercentage.toFixed(2)}% / ${revprofit}.`);
     //}
   // }
 }
